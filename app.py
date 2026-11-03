@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from models import db, Asset
+from flask_migrate import Migrate
 
 load_dotenv()
 
@@ -11,6 +12,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
+migrate = Migrate(app, db)
 
 
 def asset_to_dict(asset):
@@ -82,7 +84,6 @@ def create_asset():
 
     return jsonify(asset_to_dict(asset)), 201
 
-
 @app.route("/assets", methods=["GET"])
 def get_assets():
     type_filter = request.args.get("type")
@@ -94,19 +95,15 @@ def get_assets():
     if tag_filter is not None and not tag_filter.strip():
         return jsonify({"error": "Tag cannot be empty"}), 400
 
-    assets = Asset.query.filter_by(status="Active").all()
+    query = Asset.query.filter_by(status="Active")
 
     if type_filter:
-        assets = [
-            asset for asset in assets
-            if asset.asset_type.lower() == type_filter.strip().lower()
-        ]
+        query = query.filter(Asset.asset_type.ilike(type_filter.strip()))
 
     if tag_filter:
-        assets = [
-            asset for asset in assets
-            if any(tag.lower() == tag_filter.strip().lower() for tag in asset.tags)
-        ]
+        query = query.filter(Asset.tags.any(Asset.tags.property.mapper.class_.name.ilike(tag_filter.strip())))
+
+    assets = query.all()
 
     return jsonify([asset_to_dict(asset) for asset in assets]), 200
 

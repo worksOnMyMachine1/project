@@ -1,36 +1,74 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 db = SQLAlchemy()
 
-class Asset(db.Model):
+
+class AssetModel(db.Model):
     __tablename__ = "assets"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    asset_type = db.Column("type", db.String(100), nullable=False)
-    description = db.Column(db.Text)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    asset_type: Mapped[str] = mapped_column("type", String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    created_at = db.Column("createdAt", db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column("updatedAt", db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        "createdAt", DateTime, default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "updatedAt", DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+    created_by: Mapped[str] = mapped_column(
+        "createdBy", String(100), default="system", nullable=False
+    )
+    updated_by: Mapped[str] = mapped_column(
+        "updatedBy", String(100), default="system", nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), default="Active", nullable=False
+    )
 
-    created_by = db.Column("createdBy", db.String(100), default="system")
-    updated_by = db.Column("updatedBy", db.String(100), default="system")
-    status = db.Column(db.String(20), default="Active", nullable=False)
+    tags: Mapped[list[AssetTagModel]] = relationship(
+        "AssetTagModel",
+        backref="asset",
+        cascade="all, delete-orphan"
+    )
 
-    tags = db.relationship("AssetTag", backref="asset", cascade="all, delete-orphan")
 
-
-class AssetTag(db.Model):
+class AssetTagModel(db.Model):
     __tablename__ = "asset_tags"
+    __table_args__ = (
+        UniqueConstraint("asset_id", "tag", name="uq_asset_tag"),
+    )
 
-    id = db.Column(db.Integer, primary_key=True)
-    asset_id = db.Column(db.Integer, db.ForeignKey("assets.id"), nullable=False)
-    tag = db.Column(db.String(100), nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    asset_id: Mapped[int] = mapped_column(
+        ForeignKey("assets.id"), nullable=False
+    )
+    tag: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    created_at = db.Column("createdAt", db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column("updatedAt", db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    created_by = db.Column("createdBy", db.String(100), default="system")
-    updated_by = db.Column("updatedBy", db.String(100), default="system")
-    status = db.Column(db.String(20), default="Active", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        "createdAt", DateTime, default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "updatedAt", DateTime, default=utc_now, onupdate=utc_now, nullable=False
+    )
+    created_by: Mapped[str] = mapped_column(
+        "createdBy", String(100), default="system", nullable=False
+    )
+    updated_by: Mapped[str] = mapped_column(
+        "updatedBy", String(100), default="system", nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), default="Active", nullable=False
+    )

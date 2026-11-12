@@ -4,14 +4,14 @@ from flask import Blueprint, jsonify, request
 from werkzeug.wrappers import Response
 
 # below functions are yet to be implemented 
-# from domain import Asset
-# from repository import AssetRepository
-# from schemas import (
-#     AssetCreate,
-#     AssetListFilters,
-#     AssetTagsCreate,
-#     AssetUpdate,
-# )
+from domain import Asset
+from repository import AssetRepository
+from schemas import (
+    AssetCreate,
+    AssetListFilters,
+    AssetTagsCreate,
+    AssetUpdate,
+)
 
 
 assets_blueprint = Blueprint("assets", __name__)

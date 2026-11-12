@@ -1,20 +1,27 @@
+
 ## Project structure
 
 ```text
-asset_register/
-├── main.py
-├── models.py
-├── .env
-├── requirements.txt
-└── instance/          # Created by Flask if it does not exist
-    └── assets.db      # Created when the app starts
+
+  ├── app.py                  # Creates the Flask app and registers the Blueprint
+  ├── models.py               # SQLAlchemy AssetModel and AssetTagModel tables
+  ├── schemas.py              # Pydantic request and query-string validation
+  ├── domain.py               # Asset dataclass and its from_dict()/to_dict() methods
+  ├── repository.py           # All database queries, writes, commits and rollbacks
+  ├── exceptions.py           # Expected asset-related exceptions
+  ├── routes.py               # Blueprint endpoints
+  └── asset_register_postman_collection.json
+  ├── requirements.txt
+  └── README.md
 ```
+
+`AssetModel` and `AssetTagModel` are the SQLAlchemy database models. `Asset` in `domain.py` is a separate dataclass used by the application and repository. This avoids a name clash while keeping the requested `Asset` dataclass.
 
 ## Setup
 
-### 1. Create and activate a virtual environment
+Use Python 3.10 or newer.
 
-From the project directory, run:
+### 1. Create and activate a virtual environment
 
 **Windows (Command Prompt):**
 
@@ -32,39 +39,47 @@ source .venv/bin/activate
 
 ### 2. Install dependencies
 
-
 ```bash
 pip install -r requirements.txt
 ```
 
-
 ### 3. Configure the database
 
-Create a `.env` file in the same directory as `main.py` and add:
+Copy `.env.example` to `.env` and keep:
 
 ```env
 DATABASE_URL=sqlite:///assets.db
 ```
 
-With Flask-SQLAlchemy, this relative SQLite path stores the database at `instance/assets.db`. The application creates the tables when it starts.
 
-### 4. Start the application
+### 4. Run the API
+
+From the project root:
 
 ```bash
-python main.py
+python -m app.py
 ```
 
-The API should be available at:
+The API runs at `http://127.0.0.1:5000` by default.
 
-```text
-http://127.0.0.1:5000
-```
 
 ## API endpoints
 
-### 1. Create an asset
+The request and response formats remain compatible with the Week 1 Postman collection.
 
-**Request**
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/assets` | Create an asset, optionally with tags |
+| GET | `/assets` | List active assets |
+| GET | `/assets?type=Electronics` | Filter active assets by type |
+| GET | `/assets?tag=office` | Filter active assets by tag |
+| GET | `/assets/<id>` | Get one active asset |
+| PUT | `/assets/<id>` | Update name, type, or description |
+| POST | `/assets/<id>/tags` | Add tags without duplicating existing tags |
+| DELETE | `/assets/<id>` | Deactivate an asset (soft delete) |
+
+
+### Create asset example
 
 ```http
 POST /assets
@@ -81,116 +96,21 @@ Content-Type: application/json
 }
 ```
 
-Example response: `201 Created`
-
-```json
-{
-  "id": 1,
-  "name": "Dell Laptop",
-  "type": "Electronics",
-  "description": "Office laptop",
-  "tags": ["office", "computer"],
-  "createdAt": "2026-10-28T10:30:00",
-  "updatedAt": "2026-10-28T10:30:00",
-  "createdBy": "admin",
-  "updatedBy": "admin",
-  "status": "Active"
-}
-```
-
-The returned ID depends on the database. `createdBy` and `updatedBy` default to `system` if omitted.
-
-### 2. List active assets
-
-**Request**
-
-```http
-GET /assets
-```
-
-Returns a JSON array of active assets. Inactive assets are not included.
-
-### 3. Filter assets by type
-
-**Request**
-
-```http
-GET /assets?type=Electronics
-```
-
-Returns active assets whose type matches `Electronics`. The type filter is case-insensitive.
-
-### 4. Filter assets by tag
-
-**Request**
-
-```http
-GET /assets?tag=office
-```
-
-Returns active assets containing the `office` tag. The tag filter is case-insensitive.
-
-You can combine both filters:
-
-```http
-GET /assets?type=Electronics&tag=office
-```
-
-### 5. Get one asset
-
-**Request**
-
-```http
-GET /assets/1
-```
-
-Returns the active asset with ID `1`.
-
-Example response: `200 OK`
-
-```json
-{
-  "id": 1,
-  "name": "Dell Laptop",
-  "type": "Electronics",
-  "description": "Office laptop",
-  "tags": ["office", "computer"],
-  "createdAt": "2026-10-28T10:30:00",
-  "updatedAt": "2026-10-28T10:30:00",
-  "createdBy": "admin",
-  "updatedBy": "admin",
-  "status": "Active"
-}
-```
-
-If the ID does not exist or the asset is inactive, the API returns `404 Not Found`.
-
-### 6. Update an asset
-
-**Request**
+### Update asset example
 
 ```http
 PUT /assets/1
 Content-Type: application/json
 ```
 
-Send only the fields you want to change:
-
 ```json
 {
   "name": "Dell Latitude Laptop",
-  "description": "Laptop assigned to the finance team",
   "updatedBy": "admin"
 }
 ```
 
-Example response: `200 OK`, with the updated asset in the response body.
-
-Allowed fields are `name`, `type`, `description`, and `updatedBy`. At least one asset field (`name`, `type`, or `description`) must be provided.
-
-### 7. Add tags to an asset
-
-**Request**
+### Add tags example
 
 ```http
 POST /assets/1/tags
@@ -204,22 +124,3 @@ Content-Type: application/json
 }
 ```
 
-The response contains the asset and its updated tag list. Existing tags are not added again (tag comparisons are case-insensitive). The implementation returns `201 Created` when new tags are added and `200 OK` when all supplied tags already exist.
-
-### 8. Deactivate an asset
-
-**Request**
-
-```http
-DELETE /assets/1
-```
-
-Example response: `200 OK`
-
-```json
-{
-  "message": "Asset deactivated successfully"
-}
-```
-
-This changes the asset's `status` to `Inactive`; it does not delete the row from SQLite. Inactive assets are excluded from list, get, update, tag, and delete operations. Trying to access an inactive asset returns `404 Not Found`.

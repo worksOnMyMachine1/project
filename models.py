@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
@@ -13,8 +14,12 @@ def utc_now() -> datetime:
 
 db = SQLAlchemy()
 
+if TYPE_CHECKING:
+    from flask_sqlalchemy.model import Model
+else:
+    Model = db.Model
 
-class AssetModel(db.Model):
+class AssetModel(Model):
     __tablename__ = "assets"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -45,7 +50,7 @@ class AssetModel(db.Model):
     )
 
 
-class AssetTagModel(db.Model):
+class AssetTagModel(Model):
     __tablename__ = "asset_tags"
     __table_args__ = (
         UniqueConstraint("asset_id", "tag", name="uq_asset_tag"),

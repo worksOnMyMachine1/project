@@ -45,7 +45,7 @@ pip install -r requirements.txt
 
 ### 3. Configure the database
 
-Copy `.env.example` to `.env` and keep:
+In `.env`:
 
 ```env
 DATABASE_URL=sqlite:///assets.db

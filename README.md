@@ -13,6 +13,7 @@
   └── asset_register_postman_collection.json
   ├── requirements.txt
   └── README.md
+  |__ weather_client/    # for working with custom decorators around weather api 
 ```
 
 `AssetModel` and `AssetTagModel` are the SQLAlchemy database models. `Asset` in `domain.py` is a separate dataclass used by the application and repository. This avoids a name clash while keeping the requested `Asset` dataclass.
@@ -124,3 +125,43 @@ Content-Type: application/json
 }
 ```
 
+### Testing
+
+Tests are written using pythons `pytest` library, having coverage over 90%.
+Install the `pytest` and other testing libraries using `pip install -r requirements.txt`.
+
+Run the test suite and coverage thru `pytest --cov`.
+
+i.e.
+
+```
+ pytest --cov
+======================= test session starts =======================
+platform linux -- Python 3.13.5, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/srvk/prj/project
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0
+collected 37 items                                                
+
+tests/test_routes.py .....................................  [100%]
+
+========================= tests coverage ==========================
+_________ coverage: platform linux, python 3.13.5-final-0 _________
+
+Name                   Stmts   Miss  Cover
+------------------------------------------
+app.py                    35      2    94%
+domain.py                 34      4    88%
+exceptions.py              3      0   100%
+models.py                 33      0   100%
+repository.py            107      9    92%
+routes.py                 39      0   100%
+schemas.py                43      3    93%
+tests/conftest.py         25      1    96%
+tests/test_routes.py     105      0   100%
+------------------------------------------
+TOTAL                    424     19    96%
+======================= 37 passed in 0.56s ========================
+
+```
